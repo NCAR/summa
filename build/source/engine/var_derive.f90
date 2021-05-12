@@ -326,13 +326,13 @@ contains
    case(powerLaw_profile)
     ! - conductivity at layer interfaces
     !   --> NOTE: Do we need a weighted average based on layer depth for interior layers?
-    
+
     if(compactedDepth/iLayerHeight(nLayers) /= 1._dp) then    ! avoid divide by zero
      ifcDepthScaleFactor = ( (1._dp - iLayerHeight(iLayer)/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._dp) ) / &
                            ( (1._dp -       compactedDepth/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._dp) )
     else
      ifcDepthScaleFactor = 1.0_dp
-    endif                           
+    endif
     if(iLayer==nSnow)then
      iLayerSatHydCond(iLayer-nSnow) = k_soil(1) * ifcDepthScaleFactor
     else   ! if the mid-point of a layer
@@ -341,22 +341,30 @@ contains
      else
       iLayerSatHydCond(iLayer-nSnow)   = 0.5_dp * (k_soil(iLayer-nSnow) + k_soil(iLayer+1-nSnow) ) * ifcDepthScaleFactor
      endif
+     ! - check macropore conductivity > micropore conductivity
+     if(k_macropore(iLayer-nSnow) < k_soil(iLayer-nSnow))then
+      message=trim(message)//"hydraulic conductivity for macropores is less than the hydraulic conductivity for micropores"
+      err=20; return
+     endif
      ! - conductivity at layer midpoints
      if(compactedDepth/iLayerHeight(nLayers) /= 1._dp) then    ! avoid divide by zero
       midDepthScaleFactor = ( (1._dp - mLayerHeight(iLayer)/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._dp) ) / &
                             ( (1._dp -       compactedDepth/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._dp) )
      else
       midDepthScaleFactor = 1.0_dp
-     endif                            
+     endif
      mLayerSatHydCond(iLayer-nSnow)   = k_soil(iLayer-nSnow)      * midDepthScaleFactor
      mLayerSatHydCondMP(iLayer-nSnow) = k_macropore(iLayer-nSnow) * midDepthScaleFactor
-    end if  
- 
-    !print*, 'compactedDepth = ', compactedDepth
-    !print*, 'k_macropore    = ', k_macropore
-    !print*, 'mLayerHeight(iLayer) = ', mLayerHeight(iLayer)
-    !print*, 'iLayerHeight(nLayers) = ', iLayerHeight(nLayers)
-    !print*, 'iLayer, mLayerSatHydCondMP(iLayer-nSnow) = ', mLayerSatHydCondMP(iLayer-nSnow)
+    end if
+
+    if(iLayer>nSnow)then
+     print*, iLayer, nSnow
+     print*, 'compactedDepth = ', compactedDepth
+     print*, 'k_soil, k_macropore   = ', k_soil, k_macropore
+     print*, 'mLayerHeight(iLayer)  = ', mLayerHeight(iLayer)
+     print*, 'iLayerHeight(nLayers) = ', iLayerHeight(nLayers)
+     print*, 'iLayer, mLayerSatHydCond, mLayerSatHydCondMP = ', mLayerSatHydCond(iLayer-nSnow), mLayerSatHydCondMP(iLayer-nSnow)
+    endif
 
    ! error check (errors checked earlier also, so should not get here)
    case default
