@@ -326,13 +326,13 @@ contains
    case(powerLaw_profile)
     ! - conductivity at layer interfaces
     !   --> NOTE: Do we need a weighted average based on layer depth for interior layers?
-    
+
     if(compactedDepth/iLayerHeight(nLayers) /= 1._rkind) then    ! avoid divide by zero
      ifcDepthScaleFactor = ( (1._rkind - iLayerHeight(iLayer)/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._rkind) ) / &
                            ( (1._rkind -       compactedDepth/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._rkind) )
     else
      ifcDepthScaleFactor = 1.0_rkind
-    endif                           
+    endif
     if(iLayer==nSnow)then
      iLayerSatHydCond(iLayer-nSnow) = k_soil(1) * ifcDepthScaleFactor
     else   ! if the mid-point of a layer
@@ -347,11 +347,11 @@ contains
                             ( (1._rkind -       compactedDepth/iLayerHeight(nLayers))**(zScale_TOPMODEL - 1._rkind) )
      else
       midDepthScaleFactor = 1.0_rkind
-     endif                            
+     endif
      mLayerSatHydCond(iLayer-nSnow)   = k_soil(iLayer-nSnow)      * midDepthScaleFactor
      mLayerSatHydCondMP(iLayer-nSnow) = k_macropore(iLayer-nSnow) * midDepthScaleFactor
-    end if  
- 
+    end if
+
     !print*, 'compactedDepth = ', compactedDepth
     !print*, 'k_macropore    = ', k_macropore
     !print*, 'mLayerHeight(iLayer) = ', mLayerHeight(iLayer)
@@ -456,10 +456,13 @@ contains
    ! check that we have enough bins
    sumFrac  = sum(fractionFuture)
    if(abs(1._rkind - sumFrac) > tolerFrac)then
-    write(*,*) 'fraction of basin runoff histogram being accounted for by time delay vector is ', sumFrac
-    write(*,*) 'this is less than allowed by tolerFrac = ', tolerFrac
-    message=trim(message)//'not enough bins for the time delay histogram -- fix hard-coded parameter in globalData.f90'
-    err=20; return
+    write(*,*) 'WARNING: The fraction of basin runoff histogram being accounted for by time delay vector is ', sumFrac
+    write(*,*) 'This is less than allowed by tolerFrac = ', tolerFrac
+    write(*,*) 'This means that we do not have enough bins for the time delay histogram'
+    write(*,*) 'Solutions:'
+    write(*,*) ' (1) Check that the values of routingGammaShape and routingGammaScale are appropriate (and fix if necessary); or'
+    write(*,*) ' (2) Increase the hard coded parameter nTimeDelay in globalData.f90 (currently nTimeDelay is set to ', nTDH, ')'
+    write(*,*) '       -- note that nTimeDelay defines the number of time steps in the time delay histogram'
    end if
    ! ensure the fraction sums to one
    fractionFuture = fractionFuture/sumFrac

@@ -331,14 +331,14 @@ MODULE globalData
  ! output file information
  logical(lgt),dimension(maxvarFreq),save,public :: outFreq              ! true if the output frequency is desired
  integer(i4b),dimension(maxvarFreq),save,public :: ncid                 ! netcdf output file id
- 
+
  ! look-up values for the choice of the time zone information (formerly in modelDecisions module)
  integer(i4b),parameter,public               :: ncTime=1                ! time zone information from NetCDF file (timeOffset = longitude/15. - ncTimeOffset)
  integer(i4b),parameter,public               :: utcTime=2               ! all times in UTC (timeOffset = longitude/15. hours)
  integer(i4b),parameter,public               :: localTime=3             ! all times local (timeOffset = 0)
- 
+
  ! define fixed dimensions
  integer(i4b),parameter,public               :: nBand=2          ! number of spectral bands
- integer(i4b),parameter,public               :: nTimeDelay=2000  ! number of hours in the time delay histogram (default: ~1 season = 24*365/4)
+ integer(i4b),parameter,public               :: nTimeDelay=2000  ! number of time steps in the time delay histogram (default: ~1 season = 24*365/4)
 
 END MODULE globalData
