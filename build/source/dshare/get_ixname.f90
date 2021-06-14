@@ -558,8 +558,9 @@ contains
   case('scalarVGn_m'                    ); get_ixdiag = iLookDIAG%scalarVGn_m                      ! van Genuchten "m" parameter (-)
   case('scalarKappa'                    ); get_ixdiag = iLookDIAG%scalarKappa                      ! constant in the freezing curve function (m K-1)
   case('scalarVolLatHt_fus'             ); get_ixdiag = iLookDIAG%scalarVolLatHt_fus               ! volumetric latent heat of fusion     (J m-3)
-  ! number of function evaluations
+  ! timing information
   case('numFluxCalls'                   ); get_ixdiag = iLookDIAG%numFluxCalls                     ! number of flux calls (-)
+  case('wallClockTime'                  ); get_ixdiag = iLookDIAG%wallClockTime                    ! wall clock time (s)
   ! get to here if cannot find the variable
   case default
    get_ixdiag = integerMissing

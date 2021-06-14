@@ -64,10 +64,6 @@ USE var_lookup,only:iLookDECISIONS                          ! named variables fo
 
 ! provide access to look-up values for model decisions
 USE mDecisions_module,only:      &
- ! look-up values for the numerical method
- iterative,                      & ! iterative
- nonIterative,                   & ! non-iterative
- iterSurfEnergyBal,              & ! iterate only on the surface energy balance
  ! look-up values for method used to compute derivative
  numerical,                      & ! numerical solution
  analytical,                     & ! analytical solution

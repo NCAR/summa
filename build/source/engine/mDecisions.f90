@@ -57,9 +57,8 @@ integer(i4b),parameter,public :: minFunc              =  62    ! do not enable c
 integer(i4b),parameter,public :: constantScaling      =  71    ! constant scaling factor
 integer(i4b),parameter,public :: laiScaling           =  72    ! exponential function of LAI (Leuning, Plant Cell Env 1995: "Scaling from..." [eq 9])
 ! look-up values for the choice of numerical method
-integer(i4b),parameter,public :: iterative            =  81    ! iterative
-integer(i4b),parameter,public :: nonIterative         =  82    ! non-iterative
-integer(i4b),parameter,public :: iterSurfEnergyBal    =  83    ! iterate only on the surface energy balance
+integer(i4b),parameter,public :: bEuler               =  81    ! home-grown backward Euler solution with long time steps
+integer(i4b),parameter,public :: sundials             =  82    ! SUNDIALS/IDA solution
 ! look-up values for method used to compute derivative
 integer(i4b),parameter,public :: numerical            =  91    ! numerical solution
 integer(i4b),parameter,public :: analytical           =  92    ! analytical solution
@@ -397,9 +396,9 @@ contains
 
  ! identify the numerical method
  select case(trim(model_decisions(iLookDECISIONS%num_method)%cDecision))
-  case('itertive'); model_decisions(iLookDECISIONS%num_method)%iDecision = iterative           ! iterative
-  case('non_iter'); model_decisions(iLookDECISIONS%num_method)%iDecision = nonIterative        ! non-iterative
-  case('itersurf'); model_decisions(iLookDECISIONS%num_method)%iDecision = iterSurfEnergyBal   ! iterate only on the surface energy balance
+  case('bEuler'   ); model_decisions(iLookDECISIONS%num_method)%iDecision = bEuler             ! home-grown backward Euler solution with long time steps
+  case('itertive' ); model_decisions(iLookDECISIONS%num_method)%iDecision = bEuler             ! home-grown backward Euler solution (included for backwards compatibility)
+  case('sundials' ); model_decisions(iLookDECISIONS%num_method)%iDecision = sundials           ! SUNDIALS/IDA solution
   case default
    err=10; message=trim(message)//"unknown numerical method [option="//trim(model_decisions(iLookDECISIONS%num_method)%cDecision)//"]"; return
  end select
