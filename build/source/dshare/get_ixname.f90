@@ -489,6 +489,10 @@ contains
   case('scalarLambda_wetsoil'           ); get_ixdiag = iLookDIAG%scalarLambda_wetsoil             ! thermal conductivity of wet soil     (W m-1)
   case('mLayerThermalC'                 ); get_ixdiag = iLookDIAG%mLayerThermalC                   ! thermal conductivity at the mid-point of each layer (W m-1 K-1)
   case('iLayerThermalC'                 ); get_ixdiag = iLookDIAG%iLayerThermalC                   ! thermal conductivity at the interface of each layer (W m-1 K-1)
+  ! enthalpy
+  case('scalarCanairEnthalpy'           ); get_ixdiag = iLookDIAG%scalarCanairEnthalpy             ! enthalpy of the canopy air space (J m-3)
+  case('scalarCanopyEnthalpy'           ); get_ixdiag = iLookDIAG%scalarCanopyEnthalpy             ! enthalpy of the vegetation canopy (J m-3)
+  case('mLayerEnthalpy'                 ); get_ixdiag = iLookDIAG%mLayerEnthalpy                   ! enthalpy of the snow+soil layers (J m-3)
   ! forcing
   case('scalarVPair'                    ); get_ixdiag = iLookDIAG%scalarVPair                      ! vapor pressure of the air above the vegetation canopy (Pa)
   case('scalarVP_CanopyAir'             ); get_ixdiag = iLookDIAG%scalarVP_CanopyAir               ! vapor pressure of the canopy air space (Pa)
@@ -558,8 +562,9 @@ contains
   case('scalarVGn_m'                    ); get_ixdiag = iLookDIAG%scalarVGn_m                      ! van Genuchten "m" parameter (-)
   case('scalarKappa'                    ); get_ixdiag = iLookDIAG%scalarKappa                      ! constant in the freezing curve function (m K-1)
   case('scalarVolLatHt_fus'             ); get_ixdiag = iLookDIAG%scalarVolLatHt_fus               ! volumetric latent heat of fusion     (J m-3)
-  ! number of function evaluations
+  ! timing information
   case('numFluxCalls'                   ); get_ixdiag = iLookDIAG%numFluxCalls                     ! number of flux calls (-)
+  case('wallClockTime'                  ); get_ixdiag = iLookDIAG%wallClockTime                    ! wall clock time (s)
   ! get to here if cannot find the variable
   case default
    get_ixdiag = integerMissing
@@ -983,19 +988,20 @@ contains
  ! poll variable index plus return which structure it was found in
  do iStruc = 1,size(structInfo)
   select case(trim(structInfo(iStruc)%structName))
-   case ('time' ); vDex = get_ixTime(trim(varName))
-   case ('forc' ); vDex = get_ixForce(trim(varName))
-   case ('attr' ); vDex = get_ixAttr(trim(varName))
-   case ('type' ); vDex = get_ixType(trim(varName))
-   case ('id'   ); vDex = get_ixId(trim(varName))
-   case ('mpar' ); vDex = get_ixParam(trim(varName))
-   case ('indx' ); vDex = get_ixIndex(trim(varName))
-   case ('prog' ); vDex = get_ixProg(trim(varName))
-   case ('diag' ); vDex = get_ixDiag(trim(varName))
-   case ('flux' ); vDex = get_ixFlux(trim(varName))
-   case ('bpar' ); vDex = get_ixBpar(trim(varName))
-   case ('bvar' ); vDex = get_ixBvar(trim(varName))
-   case ('deriv'); vDex = get_ixDeriv(trim(varName))
+   case ('time' );  vDex = get_ixTime(trim(varName))
+   case ('forc' );  vDex = get_ixForce(trim(varName))
+   case ('attr' );  vDex = get_ixAttr(trim(varName))
+   case ('type' );  vDex = get_ixType(trim(varName))
+   case ('id'   );  vDex = get_ixId(trim(varName))
+   case ('mpar' );  vDex = get_ixParam(trim(varName))
+   case ('indx' );  vDex = get_ixIndex(trim(varName))
+   case ('prog' );  vDex = get_ixProg(trim(varName))
+   case ('diag' );  vDex = get_ixDiag(trim(varName))
+   case ('flux' );  vDex = get_ixFlux(trim(varName))
+   case ('bpar' );  vDex = get_ixBpar(trim(varName))
+   case ('bvar' );  vDex = get_ixBvar(trim(varName))
+   case ('deriv');  vDex = get_ixDeriv(trim(varName))
+   case ('lookup'); vDex = get_ixLookup(trim(varName))
   end select
   if (vDex>0) then; typeName=trim(structInfo(iStruc)%structName); return; end if
  end do
@@ -1004,6 +1010,26 @@ contains
  err=20;message=trim(message)//'variable '//trim(varName)//' is not found in any structure'; return
 
  end subroutine get_ixUnknown
+ 
+ ! *******************************************************************************************************************
+ ! public function get_ixfreq: get the index of the named variables for the output frequencies
+ ! *******************************************************************************************************************
+ function get_ixLookup(varName)
+ USE var_lookup,only:iLookLOOKUP                     ! indices of the named variables
+ implicit none
+ ! define dummy variables
+ character(*), intent(in) :: varName                 ! variable name
+ integer(i4b)             :: get_ixLookup            ! index of the named variable
+ ! get the index of the named variables
+ select case(trim(varName))
+  case('temperature'); get_ixLookup = iLookLOOKUP%temperature     ! temperature (K)
+  case('enthalpy'   ); get_ixLookup = iLookLOOKUP%enthalpy        ! enthalpy (J m-3)
+  case('deriv2'     ); get_ixLookup = iLookLOOKUP%deriv2          ! secind derivative of the interpolating function
+  ! get to here if cannot find the variable
+  case default
+   get_ixLookup = integerMissing
+ end select
+ end function get_ixLookup
 
  ! *******************************************************************************************************************
  ! public function get_ixfreq: get the index of the named variables for the output frequencies

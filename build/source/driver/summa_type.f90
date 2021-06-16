@@ -42,10 +42,12 @@ USE data_types,only:&
                     gru_doubleVec,       & ! x%gru(:)%var(:)%dat (dp)
                     ! gru+hru dimension
                     gru_hru_int,         & ! x%gru(:)%hru(:)%var(:)     (i4b)
-                    gru_hru_int8,         & ! x%gru(:)%hru(:)%var(:)     (i8b)
+                    gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     (i8b)
                     gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (dp)
                     gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
-                    gru_hru_doubleVec      ! x%gru(:)%hru(:)%var(:)%dat (dp)
+                    gru_hru_doubleVec,   & ! x%gru(:)%hru(:)%var(:)%dat (dp)
+                    ! gru+hru+z dimension
+                    gru_hru_z_vLookup      ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:)  (dp)
 implicit none
 private
 
@@ -53,7 +55,9 @@ private
 ! * master summa data type
 ! *****************************************************************************
 type, public :: summa1_type_dec
-
+    ! define the lookup tables
+    type(gru_hru_z_vLookup)          :: lookupStruct               ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
+    
     ! define the statistics structures
     type(gru_hru_doubleVec)          :: forcStat                   ! x%gru(:)%hru(:)%var(:)%dat -- model forcing data
     type(gru_hru_doubleVec)          :: progStat                   ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables

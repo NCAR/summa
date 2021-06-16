@@ -1,33 +1,14 @@
-! SUMMA - Structure for Unifying Multiple Modeling Alternatives
-! Copyright (C) 2014-2015 NCAR/RAL
-!
-! This file is part of SUMMA
-!
-! For more information see: http://www.ral.ucar.edu/projects/summa
-!
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-!
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-!
-! You should have received a copy of the GNU General Public License
-! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module diagn_evar_module
+module computThermConduct_module
 
 ! data types
 USE nrtype
 
 ! derived types to define the data structures
 USE data_types,only:&
-                    var_d,            & ! data vector (dp)
+                    var_d,            & ! data vector (rkind)
                     var_ilength,      & ! data vector with variable length dimension (i4b)
-                    var_dlength         ! data vector with variable length dimension (dp)
+                    var_dlength         ! data vector with variable length dimension (rkind)
 
 ! named variables defining elements in the data structures
 USE var_lookup,only:iLookPARAM,iLookPROG,iLookDIAG,iLookINDEX  ! named variables for structure elements
@@ -70,7 +51,7 @@ USE mDecisions_module,only: funcSoilWet, & ! function of soil wetness
 ! privacy
 implicit none
 private
-public::diagn_evar
+public::computThermConduct
 
 ! algorithmic parameters
 real(rkind),parameter     :: valueMissing=-9999._rkind  ! missing value, used when diagnostic or state variables are undefined
@@ -81,12 +62,17 @@ contains
 
 
  ! **********************************************************************************************************
- ! public subroutine diagn_evar: compute diagnostic energy variables (thermal conductivity and heat capacity)
+ ! public subroutine computThermConduct: compute diagnostic energy variables (thermal conductivity and heat capacity)
  ! **********************************************************************************************************
- subroutine diagn_evar(&
+ subroutine computThermConduct(&
                        ! input: control variables
                        computeVegFlux,          & ! intent(in): flag to denote if computing the vegetation flux
                        canopyDepth,             & ! intent(in): canopy depth (m)
+                       ! input: state variables
+                       scalarCanopyIce,           & ! intent(in): canopy ice content (kg m-2)
+                       scalarCanopyLiquid,        & ! intent(in): canopy liquid water content (kg m-2)
+                       mLayerVolFracIce,          & ! intent(in): volumetric fraction of ice at the start of the sub-step (-)
+                       mLayerVolFracLiq,          & ! intent(in): volumetric fraction of liquid water at the start of the sub-step (-)
                        ! input/output: data structures
                        mpar_data,               & ! intent(in):    model parameters
                        indx_data,               & ! intent(in):    model layer indices
@@ -101,6 +87,10 @@ contains
  ! input: model control
  logical(lgt),intent(in)         :: computeVegFlux         ! logical flag to denote if computing the vegetation flux
  real(rkind),intent(in)             :: canopyDepth            ! depth of the vegetation canopy (m)
+ real(rkind),intent(in)            :: scalarCanopyIce        ! trial value of canopy ice content (kg m-2)
+ real(rkind),intent(in)             :: scalarCanopyLiquid
+ real(rkind),intent(in)             :: mLayerVolFracLiq(:)        ! trial vector of volumetric liquid water content (-)
+ real(rkind),intent(in)             :: mLayerVolFracIce(:)        ! trial vector of volumetric ice water content (-)
  ! input/output: data structures
  type(var_dlength),intent(in)    :: mpar_data              ! model parameters
  type(var_ilength),intent(in)    :: indx_data              ! model layer indices
@@ -140,11 +130,6 @@ contains
  ! input: model decisions
  ixThCondSnow            => model_decisions(iLookDECISIONS%thCondSnow)%iDecision,      & ! intent(in): choice of method for thermal conductivity of snow
  ixThCondSoil            => model_decisions(iLookDECISIONS%thCondSoil)%iDecision,      & ! intent(in): choice of method for thermal conductivity of soil
- ! input: state variables
- scalarCanopyIce         => prog_data%var(iLookPROG%scalarCanopyIce)%dat(1),           & ! intent(in): canopy ice content (kg m-2)
- scalarCanopyLiquid      => prog_data%var(iLookPROG%scalarCanopyLiq)%dat(1),           & ! intent(in): canopy liquid water content (kg m-2)
- mLayerVolFracIce        => prog_data%var(iLookPROG%mLayerVolFracIce)%dat,             & ! intent(in): volumetric fraction of ice at the start of the sub-step (-)
- mLayerVolFracLiq        => prog_data%var(iLookPROG%mLayerVolFracLiq)%dat,             & ! intent(in): volumetric fraction of liquid water at the start of the sub-step (-)
  ! input: coordinate variables
  nSnow                   => indx_data%var(iLookINDEX%nSnow)%dat(1),                    & ! intent(in): number of snow layers
  nSoil                   => indx_data%var(iLookINDEX%nSoil)%dat(1),                    & ! intent(in): number of soil layers
@@ -164,28 +149,16 @@ contains
  frac_silt               => mpar_data%var(iLookPARAM%frac_silt)%dat,                   & ! intent(in): fraction of silt (-)
  frac_clay               => mpar_data%var(iLookPARAM%frac_clay)%dat,                   & ! intent(in): fraction of clay (-)
  ! output: diagnostic variables
- scalarBulkVolHeatCapVeg => diag_data%var(iLookDIAG%scalarBulkVolHeatCapVeg)%dat(1),   & ! intent(out): volumetric heat capacity of the vegetation (J m-3 K-1)
- mLayerVolHtCapBulk      => diag_data%var(iLookDIAG%mLayerVolHtCapBulk)%dat,           & ! intent(out): volumetric heat capacity in each layer (J m-3 K-1)
  mLayerThermalC          => diag_data%var(iLookDIAG%mLayerThermalC)%dat,               & ! intent(out): thermal conductivity at the mid-point of each layer (W m-1 K-1)
  iLayerThermalC          => diag_data%var(iLookDIAG%iLayerThermalC)%dat,               & ! intent(out): thermal conductivity at the interface of each layer (W m-1 K-1)
  mLayerVolFracAir        => diag_data%var(iLookDIAG%mLayerVolFracAir)%dat              & ! intent(out): volumetric fraction of air in each layer (-)
  )  ! end associate statement
  ! --------------------------------------------------------------------------------------------------------------------------------
  ! initialize error control
- err=0; message="diagn_evar/"
+ err=0; message="computThermConduct/"
 
  ! initialize the soil layer
  iSoil=integerMissing
-
- ! compute the bulk volumetric heat capacity of vegetation (J m-3 K-1)
- if(computeVegFlux)then
-  scalarBulkVolHeatCapVeg = specificHeatVeg*maxMassVegetation/canopyDepth + & ! vegetation component
-                            Cp_water*scalarCanopyLiquid/canopyDepth       + & ! liquid water component
-                            Cp_ice*scalarCanopyIce/canopyDepth                ! ice component
- else
-  scalarBulkVolHeatCapVeg = valueMissing
- end if
- !print*, 'diagn_evar: scalarBulkVolHeatCapVeg = ', scalarBulkVolHeatCapVeg
 
  ! loop through layers
  do iLayer=1,nLayers
@@ -209,25 +182,7 @@ contains
    case(iname_snow); mLayerVolFracAir(iLayer) = 1._rkind - (mLayerVolFracIce(iLayer) + mLayerVolFracLiq(iLayer))
    case default; err=20; message=trim(message)//'unable to identify type of layer (snow or soil) to compute volumetric fraction of air'; return
   end select
-
-  ! *****
-  ! * compute the volumetric heat capacity of each layer (J m-3 K-1)...
-  ! *******************************************************************
-  select case(layerType(iLayer))
-   ! * soil
-   case(iname_soil)
-    mLayerVolHtCapBulk(iLayer) = iden_soil(iSoil)  * Cp_soil  * ( 1._rkind - theta_sat(iSoil) ) + & ! soil component
-                                 iden_ice          * Cp_Ice   * mLayerVolFracIce(iLayer)     + & ! ice component
-                                 iden_water        * Cp_water * mLayerVolFracLiq(iLayer)     + & ! liquid water component
-                                 iden_air          * Cp_air   * mLayerVolFracAir(iLayer)         ! air component
-   ! * snow
-   case(iname_snow)
-    mLayerVolHtCapBulk(iLayer) = iden_ice          * Cp_ice   * mLayerVolFracIce(iLayer)     + & ! ice component
-                                 iden_water        * Cp_water * mLayerVolFracLiq(iLayer)     + & ! liquid water component
-                                 iden_air          * Cp_air   * mLayerVolFracAir(iLayer)         ! air component
-   case default; err=20; message=trim(message)//'unable to identify type of layer (snow or soil) to compute olumetric heat capacity'; return
-  end select
-
+  
   ! *****
   ! * compute the thermal conductivity of snow and soil at the mid-point of each layer...
   ! *************************************************************************************
@@ -326,7 +281,7 @@ contains
  ! end association to variables in the data structure
  end associate
 
- end subroutine diagn_evar
+ end subroutine computThermConduct
 
 
-end module diagn_evar_module
+end module computThermConduct_module

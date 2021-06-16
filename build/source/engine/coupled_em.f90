@@ -33,10 +33,11 @@ USE multiconst,only:&
 
 ! data types
 USE data_types,only:&
-                    var_i,               & ! x%var(:)            (i4b)
-                    var_d,               & ! x%var(:)            (dp)
-                    var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength            ! x%var(:)%dat        (dp)
+                    var_i,               & ! x%var(:)                (i4b)
+                    var_d,               & ! x%var(:)                (dp)
+                    var_ilength,         & ! x%var(:)%dat            (i4b)
+                    var_dlength,         & ! x%var(:)%dat            (dp)
+                    zLookup                ! x%z(:)%var(:)%lookup(:) (dp)
 
 ! named variables for parent structures
 USE var_lookup,only:iLookDECISIONS         ! named variables for elements of the decision structure
@@ -110,6 +111,7 @@ contains
                        forc_data,         & ! intent(in):    model forcing data
                        mpar_data,         & ! intent(in):    model parameters
                        bvar_data,         & ! intent(in):    basin-average variables
+                       lookup_data,       & ! intent(in):    lookup tables
                        ! data structures (input-output)
                        indx_data,         & ! intent(inout): model indices
                        prog_data,         & ! intent(inout): prognostic variables for a local HRU
@@ -132,6 +134,7 @@ contains
  ! the model solver
  USE indexState_module,only:indexState      ! define indices for all model state variables and layers
  USE opSplittin_module,only:opSplittin      ! solve the system of thermodynamic and hydrology equations for a given substep
+ USE time_utils_module,only:elapsedSec      ! calculate the elapsed time
  ! additional subroutines
  USE tempAdjust_module,only:tempAdjust      ! adjust snow temperature associated with new snowfall
  USE snwDensify_module,only:snwDensify      ! snow densification (compaction and cavitation)
@@ -156,6 +159,7 @@ contains
  type(var_d),intent(in)               :: forc_data              ! model forcing data
  type(var_dlength),intent(in)         :: mpar_data              ! model parameters
  type(var_dlength),intent(in)         :: bvar_data              ! basin-average model variables
+ type(zLookup),intent(in)             :: lookup_data            ! lookup tables
  ! data structures (input-output)
  type(var_ilength),intent(inout)      :: indx_data              ! state vector geometry
  type(var_dlength),intent(inout)      :: prog_data              ! prognostic variables for a local HRU
@@ -234,11 +238,17 @@ contains
  logical(lgt), parameter              :: printBalance=.false.   ! flag to print the balance checks
  real(rkind), allocatable                :: liqSnowInit(:)         ! volumetric liquid water conetnt of snow at the start of the time step
  real(rkind), allocatable                :: liqSoilInit(:)         ! soil moisture at the start of the time step
+ ! timing information
+ real(rkind)                             :: startTime              ! start time (used to compute wall clock time)
+ real(rkind)                             :: endTime                ! end time (used to compute wall clock time)
  ! ----------------------------------------------------------------------------------------------------------------------------------------------
  ! initialize error control
  err=0; message="coupled_em/"
 
  ! This is the start of a data step for a local HRU
+
+ ! get the start time
+ call cpu_time(startTime)
 
  ! check that the decision is supported
  if(model_decisions(iLookDECISIONS%groundwatr)%iDecision==bigBucket .and. &
@@ -679,7 +689,7 @@ contains
   call diagn_evar(&
                   ! input: control variables
                   computeVegFlux,          & ! intent(in): flag to denote if computing the vegetation flux
-                  canopyDepth,             & ! intent(in): canopy depth (m)
+                  diag_data%var(iLookDIAG%scalarCanopyDepth)%dat(1),             & ! intent(in): canopy depth (m)
                   ! input/output: data structures
                   mpar_data,               & ! intent(in):    model parameters
                   indx_data,               & ! intent(in):    model layer indices
@@ -736,6 +746,7 @@ contains
                   diag_data,                              & ! intent(inout): model diagnostic variables for a local HRU
                   flux_data,                              & ! intent(inout): model fluxes for a local HRU
                   bvar_data,                              & ! intent(in):    model variables for the local basin
+                  lookup_data,                            & ! intent(in):    lookup tables
                   model_decisions,                        & ! intent(in):    model decisions
                   ! output: model control
                   dtMultiplier,                           & ! intent(out):   substep multiplier (-)
@@ -1113,7 +1124,7 @@ contains
   newSWE      = prog_data%var(iLookPROG%scalarSWE)%dat(1)
   delSWE      = newSWE - (oldSWE - sfcMeltPond)
   massBalance = delSWE - (effSnowfall + effRainfall + averageSnowSublimation - averageSnowDrainage*iden_water)*data_step
-  if(abs(massBalance) > 1.d-6)then
+  if(abs(massBalance) > absConvTol_liquid*iden_water*10._rkind)then
    print*,                  'nSnow       = ', nSnow
    print*,                  'nSub        = ', nSub
    write(*,'(a,1x,f20.10)') 'data_step   = ', data_step
@@ -1212,6 +1223,12 @@ contains
   write(message,'(a,i0)') trim(cmessage)//'number of sub-steps > 50000 for HRU ', hruID
   err=20; return
  end if
+
+ ! get the end time
+ call cpu_time(endTime)
+
+ ! get the elapsed time
+ diag_data%var(iLookDIAG%wallClockTime)%dat(1) = endTime - startTime
 
  end subroutine coupled_em
 

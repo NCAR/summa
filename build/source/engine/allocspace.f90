@@ -46,7 +46,9 @@ USE data_types,only:&
                     gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     integer(8)
                     gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (dp)
                     gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
-                    gru_hru_doubleVec      ! x%gru(:)%hru(:)%var(:)%dat (dp)
+                    gru_hru_doubleVec,   & ! x%gru(:)%hru(:)%var(:)%dat (dp)
+                    ! gru+hru+z dimension
+                    gru_hru_z_vLookup      ! x%gru(:)%hru(:)%z(:)%var(:)%lookup (dp)
 
 ! metadata structure
 USE data_types,only:var_info               ! data type for metadata
@@ -115,6 +117,8 @@ contains
   class is (gru_hru_intVec);    if(allocated(dataStruct%gru))then; check=.true.; else; allocate(dataStruct%gru(nGRU),stat=err); end if
   class is (gru_hru_double);    if(allocated(dataStruct%gru))then; check=.true.; else; allocate(dataStruct%gru(nGRU),stat=err); end if
   class is (gru_hru_doubleVec); if(allocated(dataStruct%gru))then; check=.true.; else; allocate(dataStruct%gru(nGRU),stat=err); end if
+ ! gru+hru+z dimensions
+  class is (gru_hru_z_vLookup); if(allocated(dataStruct%gru))then; check=.true.; else; allocate(dataStruct%gru(nGRU),stat=err); end if
  end select
 
  ! check errors
@@ -130,6 +134,7 @@ contains
    class is (gru_hru_intVec);    if(allocated(dataStruct%gru(iGRU)%hru))then; check=.true.; else; allocate(dataStruct%gru(iGRU)%hru(gru_struc(iGRU)%hruCount),stat=err); end if
    class is (gru_hru_double);    if(allocated(dataStruct%gru(iGRU)%hru))then; check=.true.; else; allocate(dataStruct%gru(iGRU)%hru(gru_struc(iGRU)%hruCount),stat=err); end if
    class is (gru_hru_doubleVec); if(allocated(dataStruct%gru(iGRU)%hru))then; check=.true.; else; allocate(dataStruct%gru(iGRU)%hru(gru_struc(iGRU)%hruCount),stat=err); end if
+ class is (gru_hru_z_vLookup); if(allocated(dataStruct%gru(iGRU)%hru))then; check=.true.; else; allocate(dataStruct%gru(iGRU)%hru(gru_struc(iGRU)%hruCount),stat=err); end if
    class default  ! do nothing: It is acceptable to not be any of these specified cases
   end select
   ! check errors
@@ -158,6 +163,7 @@ contains
     class is (gru_hru_intVec);    call allocLocal(metaStruct,dataStruct%gru(iGRU)%hru(iHRU),nSnow,nSoil,err,cmessage); spatial=.true.
     class is (gru_hru_double);    call allocLocal(metaStruct,dataStruct%gru(iGRU)%hru(iHRU),nSnow,nSoil,err,cmessage); spatial=.true.
     class is (gru_hru_doubleVec); call allocLocal(metaStruct,dataStruct%gru(iGRU)%hru(iHRU),nSnow,nSoil,err,cmessage); spatial=.true.
+    class is (gru_hru_z_vLookup); spatial=.true. ! (special case, allocate space separately later)
     class default; exit hruLoop
    end select
 

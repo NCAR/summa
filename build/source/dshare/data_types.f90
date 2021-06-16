@@ -127,6 +127,27 @@ MODULE data_types
  ! ***********************************************************************************************************
  ! Define hierarchal derived data types
  ! ***********************************************************************************************************
+  ! define derived types to hold look-up tables for each soil layer
+ ! ** double precision type
+ type, public :: dLookup
+  real(dp),allocatable                :: lookup(:)   ! lookup(:)
+ endtype dLookup
+ ! ** double precision type for a variable number of soil layers; variable length
+ type, public :: vLookup
+  type(dLookup),allocatable           :: var(:)      ! var(:)%lookup(:)
+ endtype vLookup
+ ! ** double precision type for a variable number of soil layers
+ type, public :: zLookup
+  type(vLookup),allocatable           :: z(:)        ! z(:)%var(:)%lookup(:)
+ endtype zLookup
+ ! ** double precision type for a variable number of soil layers
+ type, public :: hru_z_vLookup
+  type(zLookup),allocatable           :: hru(:)      ! hru(:)%z(:)%var(:)%lookup(:)
+ endtype hru_z_vLookup
+ ! ** double precision type for a variable number of soil layers
+ type, public :: gru_hru_z_vLookup
+  type(hru_z_vLookup),allocatable     :: gru(:)      ! gru(:)%hru(:)%z(:)%var(:)%lookup(:)
+ endtype gru_hru_z_vLookup
  ! define derived types to hold multivariate data for a single variable (different variables have different length)
  ! NOTE: use derived types here to facilitate adding the "variable" dimension
  ! ** double precision type

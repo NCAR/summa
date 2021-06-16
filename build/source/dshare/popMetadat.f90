@@ -31,22 +31,24 @@ contains
  USE globalData, only: diag_meta       ! data structure for local diagnostic variables
  USE globalData, only: flux_meta       ! data structure for local flux variables
  USE globalData, only: deriv_meta      ! data structure for local flux derivatives
+ USE globalData, only: lookup_meta     ! data structure for lookup tables
  ! structures of named variables
- USE var_lookup, only: iLookTIME  ! named variables for time data structure
- USE var_lookup, only: iLookFORCE ! named variables for forcing data structure
- USE var_lookup, only: iLookTYPE  ! named variables for categorical attribute data structure
- USE var_lookup, only: iLookID    ! named variables for hru and gru ID metadata
- USE var_lookup, only: iLookATTR  ! named variables for real valued attribute data structure
- USE var_lookup, only: iLookPARAM ! named variables for local parameter data structure
- USE var_lookup, only: iLookBPAR  ! named variables for basin parameter data structure
- USE var_lookup, only: iLookBVAR  ! named variables for basin model variable data structure
- USE var_lookup, only: iLookINDEX ! named variables for index variable data structure
- USE var_lookup, only: iLookPROG  ! named variables for local state variables
- USE var_lookup, only: iLookDIAG  ! named variables for local diagnostic variables
- USE var_lookup, only: iLookFLUX  ! named variables for local flux variables
- USE var_lookup, only: iLookDERIV ! named variables for local flux derivatives
- USE var_lookup, only: maxvarFreq ! number of output frequencies
- USE var_lookup, only: maxvarStat ! number of statistics
+ USE var_lookup, only: iLookTIME   ! named variables for time data structure
+ USE var_lookup, only: iLookFORCE  ! named variables for forcing data structure
+ USE var_lookup, only: iLookTYPE   ! named variables for categorical attribute data structure
+ USE var_lookup, only: iLookID     ! named variables for hru and gru ID metadata
+ USE var_lookup, only: iLookATTR   ! named variables for real valued attribute data structure
+ USE var_lookup, only: iLookPARAM  ! named variables for local parameter data structure
+ USE var_lookup, only: iLookBPAR   ! named variables for basin parameter data structure
+ USE var_lookup, only: iLookBVAR   ! named variables for basin model variable data structure
+ USE var_lookup, only: iLookINDEX  ! named variables for index variable data structure
+ USE var_lookup, only: iLookPROG   ! named variables for local state variables
+ USE var_lookup, only: iLookDIAG   ! named variables for local diagnostic variables
+ USE var_lookup, only: iLookFLUX   ! named variables for local flux variables
+ USE var_lookup, only: iLookDERIV  ! named variables for local flux derivatives
+ USE var_lookup, only: iLookLOOKUP ! named variables for lookup tables
+ USE var_lookup, only: maxvarFreq  ! number of output frequencies
+ USE var_lookup, only: maxvarStat  ! number of statistics
  USE get_ixName_module,only:get_ixVarType ! to turn vartype strings to integers
  implicit none
  ! dummy variables
@@ -351,6 +353,10 @@ contains
  diag_meta(iLookDIAG%scalarLambda_wetsoil)            = var_info('scalarLambda_wetsoil'           , 'thermal conductivity of wet soil'                                 , 'W m-1'           , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
  diag_meta(iLookDIAG%mLayerThermalC)                  = var_info('mLayerThermalC'                 , 'thermal conductivity at the mid-point of each layer'              , 'W m-1 K-1'       , get_ixVarType('midToto'), iMissVec, iMissVec, .false.)
  diag_meta(iLookDIAG%iLayerThermalC)                  = var_info('iLayerThermalC'                 , 'thermal conductivity at the interface of each layer'              , 'W m-1 K-1'       , get_ixVarType('ifcToto'), iMissVec, iMissVec, .false.)
+! enthalpy
+ diag_meta(iLookDIAG%scalarCanairEnthalpy)            = var_info('scalarCanairEnthalpy'           , 'enthalpy of the canopy air space'                                 , 'J m-3'           , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
+ diag_meta(iLookDIAG%scalarCanopyEnthalpy)            = var_info('scalarCanopyEnthalpy'           , 'enthalpy of the vegetation canopy'                                , 'J m-3'           , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
+ diag_meta(iLookDIAG%mLayerEnthalpy)                  = var_info('mLayerEnthalpy'                 , 'enthalpy of the snow+soil layers'                                 , 'J m-3'           , get_ixVarType('midToto'), iMissVec, iMissVec, .false.)
  ! forcing
  diag_meta(iLookDIAG%scalarVPair)                     = var_info('scalarVPair'                    , 'vapor pressure of the air above the vegetation canopy'            , 'Pa'              , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
  diag_meta(iLookDIAG%scalarVP_CanopyAir)              = var_info('scalarVP_CanopyAir'             , 'vapor pressure of the canopy air space'                           , 'Pa'              , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
@@ -420,8 +426,9 @@ contains
  diag_meta(iLookDIAG%scalarVGn_m)                     = var_info('scalarVGn_m'                    , 'van Genuchten "m" parameter'                                      , '-'               , get_ixVarType('midSoil'), iMissVec, iMissVec, .false.)
  diag_meta(iLookDIAG%scalarKappa)                     = var_info('scalarKappa'                    , 'constant in the freezing curve function'                          , 'm K-1'           , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
  diag_meta(iLookDIAG%scalarVolLatHt_fus)              = var_info('scalarVolLatHt_fus'             , 'volumetric latent heat of fusion'                                 , 'J m-3'           , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
- ! number of function evaluations
+ ! timing information
  diag_meta(iLookDIAG%numFluxCalls)                    = var_info('numFluxCalls'                   , 'number of flux calls'                                             , '-'               , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
+ diag_meta(iLookDIAG%wallClockTime)                   = var_info('wallClockTime'                  , 'wall clock time'                                                  , 's'               , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
 
  ! -----
  ! * local model fluxes...
@@ -595,6 +602,15 @@ contains
  bvar_meta(iLookBVAR%routingFractionFuture)   = var_info('routingFractionFuture'  , 'fraction of runoff in future time steps'                , '-'     , get_ixVarType('routing'), iMissVec, iMissVec, .false.)
  bvar_meta(iLookBVAR%averageInstantRunoff)    = var_info('averageInstantRunoff'   , 'instantaneous runoff'                                   , 'm s-1' , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
  bvar_meta(iLookBVAR%averageRoutedRunoff)     = var_info('averageRoutedRunoff'    , 'routed runoff'                                          , 'm s-1' , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
+
+ ! -----
+ ! * lookup tables...
+ ! ------------------
+
+ ! temperature and enthalpy
+ lookup_meta(iLookLOOKUP%temperature)        = var_info('temperature'          , 'value of temperature in the lookup table'                  , 'K'     , get_ixVarType('unknown'), iMissVec, iMissVec, .false.)
+ lookup_meta(iLookLOOKUP%enthalpy)           = var_info('enthalpy'             , 'value of enthalpy in the lookup table'                     , 'J m-3' , get_ixVarType('unknown'), iMissVec, iMissVec, .false.)
+ lookup_meta(iLookLOOKUP%deriv2)             = var_info('deriv2'               , 'second derivatives of the interpolating function'          , 'mixed' , get_ixVarType('unknown'), iMissVec, iMissVec, .false.)
 
  ! -----
  ! * model indices...

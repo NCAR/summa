@@ -238,11 +238,11 @@ contains
 
  ! check slope/aspect intent for radiation calculation
  if(aspect == nr_realMissing)then
-  azimuth = 0._dp              ! if aspect is not an input attribute, slope & azimuth = zero (flat Earth)
-  slope   = 0._dp
+  azimuth = 0._rkind              ! if aspect is not an input attribute, slope & azimuth = zero (flat Earth)
+  slope   = 0._rkind
  else
   azimuth = aspect                               ! in degrees
-  slope   = atan(abs(tan_slope))*180._dp/PI_D    ! convert from m/m to degrees
+  slope   = atan(abs(tan_slope))*180._rkind/PI_D    ! convert from m/m to degrees
  endif
 
  ! compute the cosine of the solar zenith angle

@@ -81,14 +81,12 @@ call handle_err(err, message)
 ! *****************************************************************************
 ! * model simulation
 ! *****************************************************************************
-
 ! loop through time
 do modelTimeStep=1,numtim
 
  ! read model forcing data
  call summa_readForcing(modelTimeStep, summa1_struc(n), err, message)
  call handle_err(err, message)
-
  ! run the summa physics for one time step
  call summa_runPhysics(modelTimeStep, summa1_struc(n), err, message)
  call handle_err(err, message)
@@ -96,7 +94,6 @@ do modelTimeStep=1,numtim
  ! write the model output
  call summa_writeOutputFiles(modelTimeStep, summa1_struc(n), err, message)
  call handle_err(err, message)
-
 end do  ! looping through time
 
 ! successful end

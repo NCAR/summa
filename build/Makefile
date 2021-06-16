@@ -2,13 +2,13 @@
 # Makefile to compile SUMMA
 #========================================================================
 #
-# Recommended use: Copy this file to Makefile.local, edit it to your
+# Recommended use: Copy this file to Makefile.local, edit it to your 
 # heart's content, and then run `make -f build/Makefile.local` from
 # your top level SUMMA directory. Don't include the Makefile.local in
 # any pull requests you make.
 #
 # Note that Makefile configurations that we commonly use can be found on
-# the SUMMA wiki at:
+# the SUMMA wiki at: 
 # https://github.com/NCAR/summa/wiki/SUMMA-Makefile-Part-0-configuration
 # feel free to add yours to that page.
 #
@@ -20,10 +20,10 @@
 #  * FC_EXE           - compiler executable
 #  * INCLUDES         - path to include files
 #  * LIBRARIES        - path to and libraries to include
-#
+# 
 # Some further options can be specified for OpenMP, etc. See in Part 0 of
-# the Makefile. You don't need to make any changes in PART 1 and
-# following unless you are doing SUMMA development and changed what
+# the Makefile. You don't need to make any changes in PART 1 and 
+# following unless you are doing SUMMA development and changed what 
 # needs to be compiled
 
 #========================================================================
@@ -31,7 +31,7 @@
 #========================================================================
 
 # The variables can be specified in one of two ways:
-# * delete the '##' in front of the variable, fill out the entry,
+# * delete the '##' in front of the variable, fill out the entry, 
 #   save the file and run make
 # * make no changes to this file, but specify the variables in your
 #   environment before you run make
@@ -52,7 +52,7 @@
 # FC and FC_EXE have to be consistent
 ##FC_EXE =
 
-# Define the NetCDF and LAPACK libraries and path to include files.
+# Define the NetCDF and LAPACK libraries and path to include files. 
 # INCLUDES needs to be of the form (no quotes around the string):
 # INCLUDES = -I<include path 1> -I<include path 2> -I<...> -I<include path n>
 # LIBRARIES needs to be of the form ( no quotes around the string):
@@ -61,7 +61,7 @@
 # administrator.
 ##INCLUDES =
 ##LIBRARIES =
-
+       
 # Eventually we plan move to a real configure script, but for now we like
 # to keep track of successful compilations of SUMMA on different platforms
 # and with different compilers. If you are successful compiling SUMMA,
@@ -157,14 +157,15 @@ NRUTIL = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_NRUTIL))
 # Numerical recipes procedures
 # NOTE: all numerical recipes procedures are now replaced with free versions
 SUMMA_NRPROC= \
-		expIntegral.f90 \
-		spline_int.f90
+      expIntegral.f90 \
+      spline_int.f90
 NRPROC = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_NRPROC))
 
 # Hook-up modules (set files and directory paths)
 SUMMA_HOOKUP= \
-		ascii_util.f90 \
-		summaFileManager.f90
+      ascii_util.f90 \
+      summaFileManager.f90
+
 HOOKUP = $(patsubst %, $(HOOKUP_DIR)/%, $(SUMMA_HOOKUP))
 
 # Data modules
@@ -207,6 +208,8 @@ SUMMA_SOLVER= \
 		soilLiqFlx.f90 \
 		bigAquifer.f90 \
 		computFlux.f90 \
+		computHeatCap.f90 \
+		computThermConduct.f90 \
 		computResid.f90 \
 		computJacob.f90 \
 		eval8summa.f90 \
@@ -241,14 +244,14 @@ SUMMA_NOAHMP= \
 		module_sf_noahutl.F \
 		module_sf_noahlsm.F \
 		module_sf_noahmplsm.F
-
 NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 
 # Define routines for the SUMMA model runs
 SUMMA_MODRUN = \
-		indexState.f90 \
-		getVectorz.f90 \
-		updateVars.f90 \
+      indexState.f90 \
+      getVectorz.f90 \
+      t2enthalpy.f90 \
+      updateVars.f90 \
 		var_derive.f90 \
 		read_force.f90 \
 		derivforce.f90 \
@@ -334,6 +337,7 @@ endif
 
 # Compile
 all: compile_noah compile_comm compile_summa link clean install
+part: compile_noah compile_comm compile_summa
 
 check:
 	$(info)
@@ -360,8 +364,9 @@ compile_noah:
 	$(FC_EXE) $(FLAGS_NOAH) -c $(NRUTIL) $(NOAHMP)
 
 # compile common routines
+
 compile_comm:
-	$(FC_EXE) $(FLAGS_COMM) -c $(COMM_ALL) $(INCLUDES)
+	$(FC_EXE) $(FLAGS_COMM) -c $(COMM_ALL) $(INCLUDES) 
 
 # compile SUMMA routines
 compile_summa: update_version

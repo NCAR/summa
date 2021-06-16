@@ -366,6 +366,10 @@ MODULE var_lookup
   integer(i4b)    :: scalarLambda_wetsoil            = integerMissing ! thermal conductivity of wet soil     (W m-1 K-1)
   integer(i4b)    :: mLayerThermalC                  = integerMissing ! thermal conductivity at the mid-point of each layer (W m-1 K-1)
   integer(i4b)    :: iLayerThermalC                  = integerMissing ! thermal conductivity at the interface of each layer (W m-1 K-1)
+  ! enthalpy
+  integer(i4b)    :: scalarCanairEnthalpy            = integerMissing ! enthalpy of the canopy air space (J m-3)
+  integer(i4b)    :: scalarCanopyEnthalpy            = integerMissing ! enthalpy of the vegetation canopy (J m-3)
+  integer(i4b)    :: mLayerEnthalpy                  = integerMissing ! enthalpy of the snow+soil layers (J m-3)
   ! forcing
   integer(i4b)    :: scalarVPair                     = integerMissing ! vapor pressure of the air above the vegetation canopy (Pa)
   integer(i4b)    :: scalarVP_CanopyAir              = integerMissing ! vapor pressure of the canopy air space (Pa)
@@ -435,8 +439,9 @@ MODULE var_lookup
   integer(i4b)    :: scalarVGn_m                     = integerMissing ! van Genuchten "m" parameter (-)
   integer(i4b)    :: scalarKappa                     = integerMissing ! constant in the freezing curve function (m K-1)
   integer(i4b)    :: scalarVolLatHt_fus              = integerMissing ! volumetric latent heat of fusion     (J m-3)
-  ! number of function evaluations
+  ! timing information
   integer(i4b)    :: numFluxCalls                    = integerMissing ! number of flux calls (-)
+  integer(i4b)    :: wallClockTime                   = integerMissing ! wall clock time (s)
  endtype iLook_diag
 
  ! ***********************************************************************************************************
@@ -756,6 +761,15 @@ MODULE var_lookup
  endtype iLook_freq
 
  ! ***********************************************************************************************************
+ ! (16) structure for looking up lookup tables
+ ! ***********************************************************************************************************
+ type, public :: iLook_vLookup
+  integer(i4b)    :: temperature = integerMissing ! temperature (K)
+  integer(i4b)    :: enthalpy    = integerMissing ! enthalpy (J m-3)
+  integer(i4b)    :: deriv2      = integerMissing ! second derivatives of the interpolating function
+ endtype iLook_vLookup
+ 
+ ! ***********************************************************************************************************
  ! (X) define data structures and maximum number of variables of each type
  ! ***********************************************************************************************************
 
@@ -811,7 +825,7 @@ MODULE var_lookup
                                                                          51, 52, 53, 54, 55, 56, 57, 58, 59, 60,&
                                                                          61, 62, 63, 64, 65, 66, 67, 68, 69, 70,&
                                                                          71, 72, 73, 74, 75, 76, 77, 78, 79, 80,&
-                                                                         81, 82, 83)
+                                                                         81, 82, 83, 84, 85, 86)
  ! named variables: model fluxes
  type(iLook_flux),    public,parameter :: iLookFLUX     =iLook_flux    (  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,&
                                                                          11, 12, 13, 14, 15, 16, 17, 18, 19, 20,&
@@ -853,6 +867,9 @@ MODULE var_lookup
 
  ! number of possible output frequencies
  type(iLook_freq),    public,parameter :: iLookFreq     =ilook_freq    (  1,  2,  3,  4)
+ 
+ ! named variables in the lookup table structure
+ type(iLook_vLookup), public,parameter :: iLookLOOKUP   =ilook_vLookup (  1,  2,  3)
 
  ! define maximum number of variables of each type
  integer(i4b),parameter,public :: maxvarDecisions = storage_size(iLookDECISIONS)/iLength
@@ -872,6 +889,7 @@ MODULE var_lookup
  integer(i4b),parameter,public :: maxvarVarType   = storage_size(iLookVarType)/iLength
  integer(i4b),parameter,public :: maxvarStat      = storage_size(iLookStat)/iLength
  integer(i4b),parameter,public :: maxvarFreq      = storage_size(iLookFreq)/iLength
+ integer(i4b),parameter,public :: maxvarLookup    = storage_size(iLookLOOKUP)/iLength
 
  ! ***********************************************************************************************************
  ! (Y) define ancillary look-up structures

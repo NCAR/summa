@@ -219,6 +219,9 @@ contains
   bparStruct           => summa1_struc%bparStruct          , & ! x%gru(:)%var(:)            -- basin-average parameters
   bvarStruct           => summa1_struc%bvarStruct          , & ! x%gru(:)%var(:)%dat        -- basin-average variables
 
+  ! lookup table structure
+  lookupStruct         => summa1_struc%lookupStruct        , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup    -- lookup-tables
+  
   ! run time variables
   greenVegFrac_monthly => summa1_struc%greenVegFrac_monthly, & ! fraction of green vegetation in each month (0-1)
   computeVegFlux       => summa1_struc%computeVegFlux      , & ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
@@ -250,6 +253,7 @@ contains
                   typeStruct%gru(iGRU),         & ! intent(in):    local classification of soil veg etc. for each HRU
                   idStruct%gru(iGRU),           & ! intent(in):    local classification of soil veg etc. for each HRU
                   attrStruct%gru(iGRU),         & ! intent(in):    local attributes for each HRU
+                  lookupStruct%gru(iGRU),       & ! intent(in):    local lookup tables for each HRU
                   ! data structures (input-output)
                   mparStruct%gru(iGRU),         & ! intent(inout): local model parameters
                   indxStruct%gru(iGRU),         & ! intent(inout): model indices

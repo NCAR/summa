@@ -53,6 +53,7 @@ MODULE globalData
  USE var_lookup,only:maxvarBpar      ! basin-average parameters: maximum number variables
  USE var_lookup,only:maxvarDecisions ! maximum number of decisions
  USE var_lookup,only:maxvarFreq      ! maximum number of output files
+ USE var_lookup,only:maxvarLookup    ! maximum number of variables in the lookup tables
  implicit none
  private
 
@@ -173,21 +174,22 @@ MODULE globalData
  real(rkind),parameter,public                   :: dx = 1.e-8_rkind           ! finite difference increment
 
  ! define summary information on all data structures
- integer(i4b),parameter                      :: nStruct=13              ! number of data structures
+ integer(i4b),parameter                      :: nStruct=14              ! number of data structures
  type(struct_info),parameter,public,dimension(nStruct) :: structInfo=(/&
-                   struct_info('time',  'TIME' , maxvarTime ), &        ! the time data structure
-                   struct_info('forc',  'FORCE', maxvarForc ), &        ! the forcing data structure
-                   struct_info('attr',  'ATTR' , maxvarAttr ), &        ! the attribute data structure
-                   struct_info('type',  'TYPE' , maxvarType ), &        ! the type data structure
-                   struct_info('id'  ,  'ID'   , maxvarId   ), &        ! the type data structure
-                   struct_info('mpar',  'PARAM', maxvarMpar ), &        ! the model parameter data structure
-                   struct_info('bpar',  'BPAR' , maxvarBpar ), &        ! the basin parameter data structure
-                   struct_info('bvar',  'BVAR' , maxvarBvar ), &        ! the basin variable data structure
-                   struct_info('indx',  'INDEX', maxvarIndx ), &        ! the model index data structure
-                   struct_info('prog',  'PROG',  maxvarProg ), &        ! the prognostic (state) variable data structure
-                   struct_info('diag',  'DIAG' , maxvarDiag ), &        ! the diagnostic variable data structure
-                   struct_info('flux',  'FLUX' , maxvarFlux ), &        ! the flux data structure
-                   struct_info('deriv', 'DERIV', maxvarDeriv) /)        ! the model derivative data structure
+                   struct_info('time',   'TIME' ,  maxvarTime  ), &        ! the time data structure
+                   struct_info('forc',   'FORCE',  maxvarForc  ), &        ! the forcing data structure
+                   struct_info('attr',   'ATTR' ,  maxvarAttr  ), &        ! the attribute data structure
+                   struct_info('type',   'TYPE' ,  maxvarType  ), &        ! the type data structure
+                   struct_info('id'  ,   'ID'   ,  maxvarId    ), &        ! the type data structure
+                   struct_info('mpar',   'PARAM',  maxvarMpar  ), &        ! the model parameter data structure
+                   struct_info('bpar',   'BPAR' ,  maxvarBpar  ), &        ! the basin parameter data structure
+                   struct_info('bvar',   'BVAR' ,  maxvarBvar  ), &        ! the basin variable data structure
+                   struct_info('indx',   'INDEX',  maxvarIndx  ), &        ! the model index data structure
+                   struct_info('prog',   'PROG',   maxvarProg  ), &        ! the prognostic (state) variable data structure
+                   struct_info('diag',   'DIAG' ,  maxvarDiag  ), &        ! the diagnostic variable data structure
+                   struct_info('flux',   'FLUX' ,  maxvarFlux  ), &        ! the flux data structure
+                   struct_info('deriv',  'DERIV',  maxvarDeriv ), &        ! the model derivative data structure
+                   struct_info('lookup', 'LOOKUP', maxvarLookup) /)        ! the lookup table data structure
 
  ! fixed model decisions
  logical(lgt)          , parameter, public   :: overwriteRSMIN=.false.  ! flag to overwrite RSMIN
@@ -216,6 +218,7 @@ MODULE globalData
  type(var_info),save,public                  :: diag_meta(maxvarDiag)        ! local diagnostic variables for each HRU
  type(var_info),save,public                  :: flux_meta(maxvarFlux)        ! local model fluxes for each HRU
  type(var_info),save,public                  :: deriv_meta(maxvarDeriv)      ! local model derivatives for each HRU
+ type(var_info),save,public                  :: lookup_meta(maxvarLookup)    ! local lookup tables for each HRU
  type(var_info),save,public                  :: bpar_meta(maxvarBpar)        ! basin parameters for aggregated processes
  type(var_info),save,public                  :: bvar_meta(maxvarBvar)        ! basin variables for aggregated processes
 

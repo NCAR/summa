@@ -1,5 +1,5 @@
 ! SUMMA - Structure for Unifying Multiple Modeling Alternatives
-! Copyright (C) 2014-2020 NCAR/RAL; University of Saskatchewan; University of Washington
+! Copyright (C) 2014-2015 NCAR/RAL
 !
 ! This file is part of SUMMA
 !
@@ -66,6 +66,7 @@ USE data_types,only:&
                     var_i,        & ! data vector (i4b)
                     var_d,        & ! data vector (dp)
                     var_ilength,  & ! data vector with variable length dimension (i4b)
+                    zLookup,      & ! data vector with variable length dimension (dp)
                     var_dlength     ! data vector with variable length dimension (dp)
 
 ! provide access to indices that define elements of the data structures
@@ -74,6 +75,9 @@ USE var_lookup,only:iLookPROG             ! named variables for structure elemen
 USE var_lookup,only:iLookDERIV            ! named variables for structure elements
 USE var_lookup,only:iLookPARAM            ! named variables for structure elements
 USE var_lookup,only:iLookINDEX            ! named variables for structure elements
+
+! provide access to the routines to calculate enthalpy
+USE t2enthalpy_module,only:t2enthalpy
 
 ! provide access to routines to update states
 USE updatState_module,only:updateSnow     ! update snow states
@@ -105,6 +109,7 @@ contains
  subroutine updateVars(&
                        ! input
                        do_adjustTemp,                             & ! intent(in):    logical flag to adjust temperature to account for the energy used in melt+freeze
+                       lookup_data,                               & ! intent(in):    lookup tables for a local HRU
                        mpar_data,                                 & ! intent(in):    model parameters for a local HRU
                        indx_data,                                 & ! intent(in):    indices defining model states and layers
                        prog_data,                                 & ! intent(in):    model prognostic variables for a local HRU
@@ -129,6 +134,7 @@ contains
  implicit none
  ! input
  logical(lgt)     ,intent(in)    :: do_adjustTemp                   ! flag to adjust temperature to account for the energy used in melt+freeze
+ type(zLookup),    intent(in)    :: lookup_data                     ! lookup tables for a local HRU
  type(var_dlength),intent(in)    :: mpar_data                       ! model parameters for a local HRU
  type(var_ilength),intent(in)    :: indx_data                       ! indices defining model states and layers
  type(var_dlength),intent(in)    :: prog_data                       ! prognostic variables for a local HRU
@@ -713,22 +719,6 @@ contains
  ! subroutine starts here
  residual   = -heatCap*(xTemp - tempInit) + meltNrg*(volFracIceTrial - volFracIceInit)  ! J m-3
  derivative = heatCap + LH_fus*iden_water*dLiq_dT  ! J m-3 K-1
- 
- ! check validity of residual ... 
- ! informational only:  if nan, the sim will start to error out from calling routine
- if( ieee_is_nan(residual) )then
-  print*, '--------'
-  print*, 'ERROR: residual is not valid in xTempSolve'
-  print*, 'heatCap', heatCap
-  print*, 'xTemp', xTemp
-  print*, 'tempInit', tempInit
-  print*, 'meltNrg', meltNrg
-  print*, 'volFracIceTrial', volFracIceTrial
-  print*, 'volFracIceInit', volFracIceInit
-  print*, 'dLiq_dT', dLiq_dT
-  print*, '--------'
- endif
- 
  end subroutine xTempSolve
 
 end module updateVars_module

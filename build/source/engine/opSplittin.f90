@@ -1,5 +1,5 @@
 ! SUMMA - Structure for Unifying Multiple Modeling Alternatives
-! Copyright (C) 2014-2020 NCAR/RAL; University of Saskatchewan; University of Washington
+! Copyright (C) 2014-2015 NCAR/RAL
 !
 ! This file is part of SUMMA
 !
@@ -100,6 +100,7 @@ USE data_types,only:&
                     var_flagVec,  & ! data vector with variable length dimension (i4b)
                     var_ilength,  & ! data vector with variable length dimension (i4b)
                     var_dlength,  & ! data vector with variable length dimension (dp)
+                    zLookup,      & ! data vector with variable length dimension (dp)
                     model_options   ! defines the model decisions
 
 ! look-up values for the choice of groundwater representation (local-column, or single-basin)
@@ -121,7 +122,6 @@ public::opSplittin
 ! named variables for the coupling method
 integer(i4b),parameter  :: fullyCoupled=1             ! 1st try: fully coupled solution
 integer(i4b),parameter  :: stateTypeSplit=2           ! 2nd try: separate solutions for each state type
-integer(i4b),parameter  :: nCoupling=2                ! number of possible solutions
 
 ! named variables for the state variable split
 integer(i4b),parameter  :: nrgSplit=1                 ! order in sequence for the energy operation
@@ -162,7 +162,7 @@ contains
  ! (1) Attempt different solutions in the following order: (a) fully coupled; (b) split by state type and by
  !      domain type for a given energy and mass split (vegetation, snow, and soil); and (c) scalar solution
  !      for a given state type and domain subset.
- ! (2) For a given split, compute a variable number of substeps (in varSubstep).
+ ! (2) For a given split, compute a variable number of substeps (in varSubstepFida).
  ! **********************************************************************************************************
  subroutine opSplittin(&
                        ! input: model control
@@ -183,6 +183,7 @@ contains
                        diag_data,      & ! intent(inout): model diagnostic variables for a local HRU
                        flux_data,      & ! intent(inout): model fluxes for a local HRU
                        bvar_data,      & ! intent(in):    model variables for the local basin
+                       lookup_data,    & ! intent(in):    lookup tables
                        model_decisions,& ! intent(in):    model decisions
                        ! output: model control
                        dtMultiplier,   & ! intent(out):   substep multiplier (-)
@@ -223,6 +224,7 @@ contains
  type(var_dlength),intent(inout) :: diag_data                      ! diagnostic variables for a local HRU
  type(var_dlength),intent(inout) :: flux_data                      ! model fluxes for a local HRU
  type(var_dlength),intent(in)    :: bvar_data                      ! model variables for the local basin
+ type(zLookup),    intent(in)    :: lookup_data                    ! lookup tables
  type(model_options),intent(in)  :: model_decisions(:)             ! model decisions
  ! output: model control
  real(rkind),intent(out)            :: dtMultiplier                   ! substep multiplier (-)
@@ -291,6 +293,10 @@ contains
  logical(lgt)                    :: doAdjustTemp                   ! flag to adjust temperature after the mass split
  logical(lgt)                    :: failedMinimumStep              ! flag to denote failure of substepping for a given split
  integer(i4b)                    :: ixSaturation                   ! index of the lowest saturated layer (NOTE: only computed on the first iteration)
+ integer(i4b),parameter          :: IDA=1
+ integer(i4b),parameter          :: BE=2
+ integer(i4b)                    :: solver=BE   				   ! BE or IDA
+ integer(i4b)                    :: nCoupling
  ! ---------------------------------------------------------------------------------------
  ! point to variables in the data structures
  ! ---------------------------------------------------------------------------------------
@@ -355,6 +361,13 @@ contains
  ! ---------------------------------------------------------------------------------------
  ! initialize error control
  err=0; message="opSplittin/"
+ 
+ ! we just solve the fully coupled problem by ida
+ select case(solver)
+ 	case(BE); nCoupling = 2
+    case(IDA); nCoupling = 1
+    case default; err=20; message=trim(message)//'expect case to be IDA or BE'; return  
+ end select     
 
  ! *****
  ! (0) PRELIMINARIES...
@@ -481,7 +494,7 @@ contains
   end select  ! operator splitting option
 
   ! state splitting loop
-  stateTypeSplitLoop: do iStateTypeSplit=1,nStateTypeSplit
+  stateTypeSplit: do iStateTypeSplit=1,nStateTypeSplit
 
    !print*, 'iStateTypeSplit, nStateTypeSplit = ', iStateTypeSplit, nStateTypeSplit
 
@@ -753,13 +766,18 @@ contains
        ! * solve variable subset for one time step...
        ! --------------------------------------------
 
-       !print*, trim(message)//'before varSubstep: nSubset = ', nSubset
+       !print*, trim(message)//'before varSubstepFida: nSubset = ', nSubset
 
        ! keep track of the number of scalar solutions
        if(ixSolution==scalar) numberScalarSolutions = numberScalarSolutions + 1
-
+       
        ! solve variable subset for one full time step
-       call varSubstep(&
+       select case(solver)
+        case(IDA)
+			 print *, 'IDA Solver not implemented yet'
+			 stop 1
+        case(BE) 
+             call varSubstep(&
                        ! input: model control
                        dt,                         & ! intent(inout) : time step (s)
                        dtInit,                     & ! intent(in)    : initial time step (seconds)
@@ -775,6 +793,7 @@ contains
                        fluxCount,                  & ! intent(inout) : number of times fluxes are updated (should equal nsubstep)
                        ! input/output: data structures
                        model_decisions,            & ! intent(in)    : model decisions
+                       lookup_data,                & ! intent(in)    : lookup tables
                        type_data,                  & ! intent(in)    : type of vegetation and soil
                        attr_data,                  & ! intent(in)    : spatial attributes
                        forc_data,                  & ! intent(in)    : model forcing data
@@ -792,15 +811,21 @@ contains
                        failedMinimumStep,          & ! intent(out)   : flag for failed substeps
                        reduceCoupledStep,          & ! intent(out)   : flag to reduce the length of the coupled step
                        tooMuchMelt,                & ! intent(out)   : flag to denote that ice is insufficient to support melt
-                       err,cmessage)                 ! intent(out)   : error code and error message
+                       err,cmessage)                 ! intent(out)   : error code and error message 
+                     ! check
+          case default; err=20; message=trim(message)//'expect case to be ida or be'; return  
+        end select  
+        
+         
+             
        if(err/=0)then
         message=trim(message)//trim(cmessage)
         if(err>0) return
        endif  ! (check for errors)
 
-       !print*, trim(message)//'after varSubstep: scalarSnowDrainage = ', flux_data%var(iLookFLUX%scalarSnowDrainage)%dat
-       !print*, trim(message)//'after varSubstep: iLayerLiqFluxSnow  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSnow)%dat
-       !print*, trim(message)//'after varSubstep: iLayerLiqFluxSoil  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
+       !print*, trim(message)//'after varSubstepFida: scalarSnowDrainage = ', flux_data%var(iLookFLUX%scalarSnowDrainage)%dat
+       !print*, trim(message)//'after varSubstepFida: iLayerLiqFluxSnow  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSnow)%dat
+       !print*, trim(message)//'after varSubstepFida: iLayerLiqFluxSoil  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
 
        ! check
        !if(ixSolution==scalar)then
@@ -813,12 +838,12 @@ contains
        ! check
        !if(ixCoupling/=fullyCoupled)then
        ! print*, 'dt = ', dt
-       ! print*, 'after varSubstep: err              = ', err
-       ! print*, 'after varSubstep: cmessage         = ', trim(cmessage)
-       ! print*, 'after varSubstep: computeVegFlux   = ', computeVegFlux
-       ! print*, 'after varSubstep: stateMask        = ', stateMask
-       ! print*, 'after varSubstep: coupling         = ', (ixCoupling==fullyCoupled)
-       ! print*, 'after varSubstep: scalar solve     = ', (ixSolution==scalar)
+       ! print*, 'after varSubstepFida: err              = ', err
+       ! print*, 'after varSubstepFida: cmessage         = ', trim(cmessage)
+       ! print*, 'after varSubstepFida: computeVegFlux   = ', computeVegFlux
+       ! print*, 'after varSubstepFida: stateMask        = ', stateMask
+       ! print*, 'after varSubstepFida: coupling         = ', (ixCoupling==fullyCoupled)
+       ! print*, 'after varSubstepFida: scalar solve     = ', (ixSolution==scalar)
        ! print*, 'iStateTypeSplit, nStateTypeSplit = ', iStateTypeSplit, nStateTypeSplit
        ! print*, 'iDomainSplit,    nDomainSplit    = ', iDomainSplit,    nDomainSplit
        ! print*, 'nSubset           = ', nSubset
@@ -935,7 +960,7 @@ contains
     where(ixStateType(ixHydLayer) ==iname_lmpLayer)  ixStateType(ixHydLayer) =iname_matLayer
    endif  ! if modifying state variables for the mass split
 
-  end do stateTypeSplitLoop ! state type splitting loop
+  end do stateTypeSplit ! state type splitting loop
 
   ! check
   !if(ixCoupling/=fullyCoupled)then
@@ -946,20 +971,8 @@ contains
   ! ==========================================================================================================================================
 
   ! success = exit the coupling loop
-  ! terminate DO loop early if fullyCoupled returns a solution,
-  ! so that the loop does not proceed to ixCoupling = stateTypeSplit
-  if(ixCoupling==fullyCoupled .and. .not. failure) exit coupling
-  
-  ! if we reach stateTypeSplit, terminating the DO loop here is cleaner 
-  ! than letting the loop complete, because in the latter case the coupling 
-  ! loop will end with ixCoupling = nCoupling+1 = 3 (a FORTRAN loop 
-  ! increments the index variable at the end of each iteration and stops 
-  ! the loop if the index > specified stop value). Variable ixCoupling is 
-  ! used for error reporting in coupled_em.f90 in the balance checks and 
-  ! we thus need to make sure ixCoupling is not incremented to be larger 
-  ! than nCoupling.
-  if(ixCoupling==stateTypeSplit .and. .not. failure) exit coupling  
-  
+  if(ixCoupling==fullyCoupled .and. .not.failure) exit coupling
+
  end do coupling ! coupling method
 
  ! check that all state variables were updated
@@ -981,9 +994,9 @@ contains
  if(ixCoupling/=fullyCoupled .or. nSubsteps>1) dtMultiplier=0.5_rkind
 
  ! compute the melt in each snow and soil layer
- if(nSnow>0) mLayerMeltFreeze(      1:nSnow  ) = -(mLayerVolFracIce(      1:nSnow  ) - mLayerVolFracIceInit(      1:nSnow  ))*iden_ice
-             mLayerMeltFreeze(nSnow+1:nLayers) = -(mLayerVolFracIce(nSnow+1:nLayers) - mLayerVolFracIceInit(nSnow+1:nLayers))*iden_water
-
+  if(nSnow>0) diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat(      1:nSnow  ) = -(mLayerVolFracIce(      1:nSnow  ) - mLayerVolFracIceInit(      1:nSnow  ))*iden_ice
+  diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat(nSnow+1:nLayers) = -(mLayerVolFracIce(nSnow+1:nLayers) - mLayerVolFracIceInit(nSnow+1:nLayers))*iden_water
+             
  ! end associate statements
  end associate globalVars
 

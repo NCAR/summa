@@ -38,7 +38,9 @@ USE data_types,only:&
                     hru_int8,        & ! x%hru(:)%var(:)     integer(8)
                     hru_double,      & ! x%hru(:)%var(:)     (dp)
                     hru_intVec,      & ! x%hru(:)%var(:)%dat (i4b)
-                    hru_doubleVec      ! x%hru(:)%var(:)%dat (dp)
+                    hru_doubleVec,   & ! x%hru(:)%var(:)%dat (dp)
+                    ! hru+z dimension
+                    hru_z_vLookup      ! x%hru(:)%z(:)%var(:)%lookup(:)
 
 ! provide access to the named variables that describe elements of parameter structures
 USE var_lookup,only:iLookTYPE          ! look-up values for classification of veg, soils etc.
@@ -82,6 +84,7 @@ contains
                        typeHRU,            & ! intent(in):    local classification of soil veg etc. for each HRU
                        idHRU,              & ! intent(in):    local classification of hru and gru IDs
                        attrHRU,            & ! intent(in):    local attributes for each HRU
+                       lookupHRU,          & ! intent(in):    local lookup tables for each HRU
                        ! data structures (input-output)
                        mparHRU,            & ! intent(inout):    local model parameters
                        indxHRU,            & ! intent(inout): model indices
@@ -111,6 +114,7 @@ contains
  type(hru_int)       , intent(in)    :: typeHRU              ! x%hru(:)%var(:)     -- local classification of soil veg etc. for each HRU
  type(hru_int8)      , intent(in)    :: idHRU                ! x%hru(:)%var(:)     -- local classification of hru and gru IDs
  type(hru_double)    , intent(in)    :: attrHRU              ! x%hru(:)%var(:)     -- local attributes for each HRU
+ type(hru_z_vLookup) , intent(in)    :: lookupHRU            ! x%hru(:)%z(:)%var(:)%lookup(:) -- lookup values for each HRU
  ! data structures (input-output)
  type(hru_doubleVec) , intent(inout) :: mparHRU              ! x%hru(:)%var(:)%dat -- local (HRU) model parameters
  type(hru_intVec)    , intent(inout) :: indxHRU              ! x%hru(:)%var(:)%dat -- model indices
@@ -186,6 +190,7 @@ contains
                   timeVec,                         & ! intent(in):    model time data
                   typeHRU%hru(iHRU),               & ! intent(in):    local classification of soil veg etc. for each HRU
                   attrHRU%hru(iHRU),               & ! intent(in):    local attributes for each HRU
+                  lookupHRU%hru(iHRU),             & ! intent(in):    local lookup tables for each HRU
                   bvarData,                        & ! intent(in):    basin-average model variables
                   ! data structures (input-output)
                   mparHRU%hru(iHRU),               & ! intent(inout): model parameters

@@ -34,6 +34,7 @@ USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structure
 USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
 USE globalData,only:bpar_meta,bvar_meta                     ! metadata structures
 USE globalData,only:averageFlux_meta                        ! metadata for time-step average fluxes
+USE globalData,only:lookup_meta 
 
 ! statistics metadata structures
 USE globalData,only:statForc_meta                           ! child metadata for stats
@@ -114,7 +115,8 @@ contains
  ! ---------------------------------------------------------------------------------------
  ! associate to elements in the data structure
  summaVars: associate(&
-
+ ! lookup table data structure
+  lookupStruct         => summa1_struc%lookupStruct        , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
   ! statistics structures
   forcStat             => summa1_struc%forcStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model forcing data
   progStat             => summa1_struc%progStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
@@ -234,19 +236,20 @@ contains
  do iStruct=1,size(structInfo)
   ! allocate space
   select case(trim(structInfo(iStruct)%structName))
-   case('time'); call allocGlobal(time_meta,  timeStruct,  err, cmessage)   ! model forcing data
-   case('forc'); call allocGlobal(forc_meta,  forcStruct,  err, cmessage)   ! model forcing data
-   case('attr'); call allocGlobal(attr_meta,  attrStruct,  err, cmessage)   ! local attributes for each HRU
-   case('type'); call allocGlobal(type_meta,  typeStruct,  err, cmessage)   ! local classification of soil veg etc. for each HRU
-   case('id'  ); call allocGlobal(id_meta,    idStruct,    err, message)    ! local values of hru and gru IDs
-   case('mpar'); call allocGlobal(mpar_meta,  mparStruct,  err, cmessage)   ! model parameters
-   case('indx'); call allocGlobal(indx_meta,  indxStruct,  err, cmessage)   ! model variables
-   case('prog'); call allocGlobal(prog_meta,  progStruct,  err, cmessage)   ! model prognostic (state) variables
-   case('diag'); call allocGlobal(diag_meta,  diagStruct,  err, cmessage)   ! model diagnostic variables
-   case('flux'); call allocGlobal(flux_meta,  fluxStruct,  err, cmessage)   ! model fluxes
-   case('bpar'); call allocGlobal(bpar_meta,  bparStruct,  err, cmessage)   ! basin-average parameters
-   case('bvar'); call allocGlobal(bvar_meta,  bvarStruct,  err, cmessage)   ! basin-average variables
-   case('deriv'); cycle
+   case('time'  ); call allocGlobal(time_meta,    timeStruct,    err, cmessage)   ! model forcing data
+   case('forc'  ); call allocGlobal(forc_meta,    forcStruct,    err, cmessage)   ! model forcing data
+   case('attr'  ); call allocGlobal(attr_meta,    attrStruct,    err, cmessage)   ! local attributes for each HRU
+   case('type'  ); call allocGlobal(type_meta,    typeStruct,    err, cmessage)   ! local classification of soil veg etc. for each HRU
+   case('id'    ); call allocGlobal(id_meta,      idStruct,      err, message)    ! local values of hru and gru IDs
+   case('mpar'  ); call allocGlobal(mpar_meta,    mparStruct,    err, cmessage)   ! model parameters
+   case('indx'  ); call allocGlobal(indx_meta,    indxStruct,    err, cmessage)   ! model variables
+   case('prog'  ); call allocGlobal(prog_meta,    progStruct,    err, cmessage)   ! model prognostic (state) variables
+   case('diag'  ); call allocGlobal(diag_meta,    diagStruct,    err, cmessage)   ! model diagnostic variables
+   case('flux'  ); call allocGlobal(flux_meta,    fluxStruct,    err, cmessage)   ! model fluxes
+   case('bpar'  ); call allocGlobal(bpar_meta,    bparStruct,    err, cmessage)   ! basin-average parameters
+   case('bvar'  ); call allocGlobal(bvar_meta,    bvarStruct,    err, cmessage)   ! basin-average variables
+   case('lookup'); call allocGlobal(lookup_meta,  lookupStruct,  err, cmessage)   ! basin-average variables
+   case('deriv' ); cycle
    case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select
   ! check errors
