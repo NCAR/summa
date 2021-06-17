@@ -393,7 +393,6 @@ contains
  real(rkind)                        :: dt                     ! data time step (s)
  integer(i4b)                    :: nTDH                   ! number of points in the time-delay histogram
  integer(i4b)                    :: iFuture                ! index in time delay histogram
- real(rkind)                        :: aLambda                ! scale parameter in the Gamma distribution
  real(rkind)                        :: tFuture                ! future time (end of step)
  real(rkind)                        :: pSave                  ! cumulative probability at the start of the step
  real(rkind)                        :: cumProb                ! cumulative probability at the end of the step
@@ -433,8 +432,7 @@ contains
   case(timeDelay)
    ! initialize
    pSave   = 0._rkind ! cumulative probability at the start of the step
-   aLambda = routingGammaShape / routingGammaScale
-   if(routingGammaShape <= 0._rkind .or. aLambda < 0._rkind)then
+   if(routingGammaShape <= 0._rkind .or. routingGammaScale <= 0._rkind)then
     message=trim(message)//'bad arguments for the Gamma distribution'
     err=20; return
    end if
@@ -442,7 +440,7 @@ contains
    do iFuture = 1,nTDH
     ! get weight for a given bin
     tFuture = real(iFuture, kind(dt))*dt                  ! future time (end of step)
-    cumProb = gammp(routingGammaShape,aLambda*tFuture)    ! cumulative probability at the end of the step
+    cumProb = gammp(routingGammaShape,tFuture/routingGammaScale)    ! cumulative probability at the end of the step
     fractionFuture(iFuture) = max(0._rkind, cumProb - pSave) ! fraction of runoff in the current step
     pSave   = cumProb                                     ! save the cumulative probability for use in the next step
     !write(*,'(a,1x,i4,1x,3(f20.10,1x))') trim(message), iFuture, tFuture, cumProb, fractionFuture(iFuture)
